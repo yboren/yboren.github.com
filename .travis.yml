@@ -13,14 +13,14 @@ script:
     - git clone https://github.com/getpelican/pelican-plugins.git
     - mv ./pelican-plugins/ ./plugins
     - make publish
-    - git clone --quiet https://yboren:e4540fdd374aa766d39a1e2cc8f66aa900693b11@github.com/yboren/yboren.github.com.git > /dev/null
+    - git clone --quiet https://e4540fdd374aa766d39a1e2cc8f66aa900693b11@github.com/yboren/yboren.github.com.git > /dev/null
     - cd yboren.github.com
     - git config user.email "yboren@gmail.com"
     - git config user.name "yboren"
     - rsync -rv --exclude=.git ../output/* .
     - git add -f .
     - git commit -m "Travis build $TRAVIS_BUILD_NUMBER"
-    - git push -fq https://yboren:e4540fdd374aa766d39a1e2cc8f66aa900693b11@github.com/yboren/yboren.github.com.git master > /dev/null
+    - git push -fq origin master
     - echo -e "Done\n"
 env:
   global:
