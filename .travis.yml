@@ -20,7 +20,7 @@ script:
     - rsync -rv --exclude=.git ../output/* .
     - git add -f .
     - git commit -m "Travis build $TRAVIS_BUILD_NUMBER"
-    - git push -fq origin master > /dev/null
+    - git push -fq https://ccd2ebd142055bf046d6688734edc8a05cb6ee3d@github.com/yboren/yboren.github.com.git master > /dev/null
     - echo -e "Done\n"
 env:
   global:
