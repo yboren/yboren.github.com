@@ -13,7 +13,7 @@ script:
     - git clone https://github.com/getpelican/pelican-plugins.git
     - mv ./pelican-plugins/ ./plugins
     - make publish
-    - git clone --quiet https://e4540fdd374aa766d39a1e2cc8f66aa900693b11@github.com/yboren/yboren.github.com.git > /dev/null
+    - git clone --quiet https://2ac4b9840982455fd4a14205727c55e4d82674d1@github.com/yboren/yboren.github.com.git > /dev/null
     - cd yboren.github.com
     - git config user.email "yboren@gmail.com"
     - git config user.name "yboren"
