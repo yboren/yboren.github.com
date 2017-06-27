@@ -7,7 +7,21 @@ install:
 before_script:
 - pelican-themes -i ./theme/elegant
 script:
-- make travis
+    - rm -rf ./output
+    - rm -rf ./cache
+    - rm -rf ./plugins/*
+    - git clone https://github.com/getpelican/pelican-plugins.git
+    - mv ./pelican-plugins/* ./plugins
+    - make publish
+    - git clone --quiet https://${GITHUB_TOKEN}@github.com/yboren/yboren.github.com.git > /dev/null
+    - cd yboren.github.com
+    - git config user.email "yboren@gmail.com"
+    - git config user.name "yboren"
+    - rsync -rv --exclude=.git ../output/* .
+    - git add -f .
+    - git commit -m "Travis build $TRAVIS_BUILD_NUMBER"
+    - git push -fq origin master > /dev/null
+    - echo -e "Done\n"
 env:
   global:
   - secure: t1UK/xHWJrscTfUK0Oq8wEy8c53dvK6mScnM05h35gtPWpyBt+GkNawp1PvHiylzWJ3OMpr+GL8WR1FqzqbHQRE9PX6is3FGObPJk0NmzkuuFB43ksS1IZygncN3xCg9FaSane2BKKKNmnYv4KBFZZZtCprFeUIOcd8YkmFxaD5uqJcoUmGz8YufjuL0Xqmtc5rFJiJnwS7ZBXYsfFFeFzWCJWPwN2gVS2Fh2Ss6m/qLSEfrVj4w+0pDKDzR3dZmshzS5eDnJxrzmAb+6K3ILSsRFjRKOASP3efkJMOz2RQonIM+w3+gL+g6G49VT651Sj4MJmq9TYuJcEScoIWstyv0CiTOto5BZBHxwPo3R5QbJJxIylNRAwzMEiVWIDFgV5gYvdeqvKOQ3yPt9jOcu1Hh9Ctfpe/ibHTqW6a3M6vGcuMgB8cZR9OmJRB6NdMasVZ4N20LTGM6Y4n6x/NdnLM8vD+3B3G3vxyu+py6636lpv4aD16iuHgtFErUa4Tg1kJw8utdshi2y3StVFqM1T1boY8oKfiZvl7XoCpXgVGEKa6NVtfLPUgyiNCZl4AB9g/b7nADwg1H0QORDBSdK9C+lgCe+rSc+mU3p97DL7oeR9M+0VkMNxCKZDoCI8omvZeFYMXzQRQ8M3yuRThC9kW/MdJy7XDlwTm2r5CPv6E=
