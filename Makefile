@@ -4,10 +4,14 @@ PELICANOPTS=
 
 BASEDIR=$(CURDIR)
 INPUTDIR=$(BASEDIR)/content
-OUTPUTDIR=$(BASEDIR)/
+OUTPUTDIR=$(BASEDIR)/output
 CONFFILE=$(BASEDIR)/pelicanconf.py
 PUBLISHCONF=$(BASEDIR)/publishconf.py
+
+GITHUB_REPO_SLUG=yboren/yboren.github.com
+GITHUB_REMOTE_NAME=origin  
 GITHUB_PAGES_BRANCH=master
+GITHUB_COMMIT_MSG=$(shell git --no-pager log --format=%s -n 1)
 
 FTP_HOST=localhost
 FTP_USER=anonymous
@@ -106,4 +110,10 @@ github: publish
 	ghp-import -m "Generate Pelican site" -b $(GITHUB_PAGES_BRANCH) $(OUTPUTDIR)
 	@git push -qf https://$(GITHUB_TOKEN)@github.com/yboren/yboren.github.com.git $(GITHUB_PAGES_BRANCH)
 
-.PHONY: html help clean regenerate serve devserver publish ssh_upload rsync_upload dropbox_upload ftp_upload s3_upload cf_upload github
+travis: publish  
+	git config --global user.name "yboren-travis"  
+	git config --global user.email yboren@gmail.com
+	ghp-import -n -r $(GITHUB_REMOTE_NAME) -b $(GITHUB_PAGES_BRANCH) -m "$(GITHUB_COMMIT_MSG)" $(OUTPUTDIR) 
+	@git push -fq https://${GITHUB_TOKEN}@github.com/$(GITHUB_REPO_SLUG).git $(GITHUB_PAGES_BRANCH):$(GITHUB_PAGES_BRANCH) > /dev/null  
+
+.PHONY: html help clean regenerate serve devserver publish ssh_upload rsync_upload dropbox_upload ftp_upload s3_upload cf_upload github travis
