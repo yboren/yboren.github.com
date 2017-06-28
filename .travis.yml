@@ -3,9 +3,16 @@ branches:
   only:
   - blog_source
 install:
-- pip install -r requirements.txt
+  - pip install -r requirements.txt
 before_script:
-- pelican-themes -i ./theme/elegant
+  - pelican-themes -i ./theme/elegant
+  - openssl aes-256-cbc -K $encrypted_1fc90f464345_key -iv $encrypted_1fc90f464345_iv -in travis.enc -out travis -d
+  - chmod go-rwx travis
+  - eval `ssh-agent -s`
+  - ssh-add travis
+  - git config user.name "Travis-CI"
+  - git config user.email "noreply@travis-ci.org"
+
 script:
     - rm -rf ./output
     - rm -rf ./cache
@@ -13,15 +20,11 @@ script:
     - git clone https://github.com/getpelican/pelican-plugins.git
     - mv ./pelican-plugins/ ./plugins
     - make publish
-    - git clone --quiet https://yboren:f7b3b4ab4a1dac8ddae6af76d906cd0ee6afc0d1@github.com/yboren/yboren.github.com.git > /dev/null
+    - git clone --quiet git@github.com:yboren/yboren.github.com.git > /dev/null
     - cd yboren.github.com
-    - git config user.email "yboren@gmail.com"
-    - git config user.name "yboren"
+    - git checkout -b master
     - rsync -rv --exclude=.git ../output/* .
     - git add -f .
     - git commit -m "Travis build $TRAVIS_BUILD_NUMBER"
     - git push -f origin master
     - echo -e "Done\n"
-env:
-  global:
-  - secure: t1UK/xHWJrscTfUK0Oq8wEy8c53dvK6mScnM05h35gtPWpyBt+GkNawp1PvHiylzWJ3OMpr+GL8WR1FqzqbHQRE9PX6is3FGObPJk0NmzkuuFB43ksS1IZygncN3xCg9FaSane2BKKKNmnYv4KBFZZZtCprFeUIOcd8YkmFxaD5uqJcoUmGz8YufjuL0Xqmtc5rFJiJnwS7ZBXYsfFFeFzWCJWPwN2gVS2Fh2Ss6m/qLSEfrVj4w+0pDKDzR3dZmshzS5eDnJxrzmAb+6K3ILSsRFjRKOASP3efkJMOz2RQonIM+w3+gL+g6G49VT651Sj4MJmq9TYuJcEScoIWstyv0CiTOto5BZBHxwPo3R5QbJJxIylNRAwzMEiVWIDFgV5gYvdeqvKOQ3yPt9jOcu1Hh9Ctfpe/ibHTqW6a3M6vGcuMgB8cZR9OmJRB6NdMasVZ4N20LTGM6Y4n6x/NdnLM8vD+3B3G3vxyu+py6636lpv4aD16iuHgtFErUa4Tg1kJw8utdshi2y3StVFqM1T1boY8oKfiZvl7XoCpXgVGEKa6NVtfLPUgyiNCZl4AB9g/b7nADwg1H0QORDBSdK9C+lgCe+rSc+mU3p97DL7oeR9M+0VkMNxCKZDoCI8omvZeFYMXzQRQ8M3yuRThC9kW/MdJy7XDlwTm2r5CPv6E=
