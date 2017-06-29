@@ -3,34 +3,35 @@
 <head>
         <meta charset="utf-8" />
         <title>Linux Notes - yboren</title>
-        <link rel="stylesheet" href="http://yboren.github.com/theme/css/main.css" />
+        <link rel="stylesheet" href="/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Linux Notes Atom Feed" />
 
         <!--[if IE]>
-            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+            <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
 </head>
 
 <body id="index" class="home">
         <header id="banner" class="body">
-                <h1><a href="http://yboren.github.com/">Linux Notes </a></h1>
+                <h1><a href="/">Linux Notes </a></h1>
                 <nav><ul>
-                    <li><a href="http://yboren.github.com/category/linux.html">linux</a></li>
+                    <li><a href="/category/linux.html">linux</a></li>
                 </ul></nav>
         </header><!-- /#banner -->
 
             <aside id="featured" class="body">
                 <article>
-                    <h1 class="entry-title"><a href="http://yboren.github.com/linux-time.html">Linux Time</a></h1>
+                    <h1 class="entry-title"><a href="/linux-time.html">Linux Time</a></h1>
 <footer class="post-info">
-        <abbr class="published" title="2014-02-16T16:46:00">
-                Sun 16 February 2014
+        <abbr class="published" title="2014-02-16T16:46:00+08:00">
+                Published: Sun 16 February 2014
         </abbr>
 
         <address class="vcard author">
-                By <a class="url fn" href="http://yboren.github.com/author/yboren.html">yboren</a>
+                By                         <a class="url fn" href="/author/yboren.html">yboren</a>
         </address>
-<p>In <a href="http://yboren.github.com/category/linux.html">linux</a>. </p>
-<p>tags: <a href="http://yboren.github.com/tag/linux.html">linux</a><a href="http://yboren.github.com/tag/time.html">time</a></p>
+<p>In <a href="/category/linux.html">linux</a>.</p>
+<p>tags: <a href="/tag/linux.html">linux</a> <a href="/tag/time.html">time</a> </p>
 </footer><!-- /.post-info --><p>时间在任何地方都是很重要的，在计算机中更是如此。计算机是一种精巧的工具，它的正常运行需要极其严格的时序来控制，它的效率用单位时间的工作能力来衡量，可以说时间是整个计算机的基石。有时间计算机就知道当前时刻该做什么事情，当前的事情该用多长时间，如果没做完下次应该何时继续，是不是应该分配比这一次更多的时间来做它以保证它更快的完成，如果当前事情到了指定的时间还没做完，应该怎么把它放到一边，然后让后面安排的事情进入处理。计算机靠着时间正常运行，也把自己的时间贡献给各种任务，从而完成一件件的具体工作。</p>
 <p>linux作为一个操作系统，管理着所有的硬件设备，要高效的工作，了解整个时间机制是如何工作的是很重要的，主要是这几个方面，硬件，软件（内核中和硬件寄存器打交道的部分和提供给应用程序使用的系统调用），程序接口，实用工具。</p>
 <h1>硬件时钟电路</h1>
@@ -145,14 +146,14 @@ PMT不会，这都是缘于它的固定的高频率，另外一方面，高频�
 <p>linux中主要有两种定时器，动态定时器(dynamic timer)和间隔定时器(interval timer)。第一种内核使用，第二种可由用户态进程使用。</p>
 <h3>动态定时器</h3>
 <p>linux的动态定时器存放在一个叫timer_list的结构中，重要是两个字段，expires和function。expires字段给出定时器的到期时间，时间用节拍数表示。function用来表示在定时器到期时执行的函数地址，有一个data字段用来给function传递参数。其它字段用来将动态定时器组织起来。</p>
-<div class="highlight"><pre><span class="nx">struct</span> <span class="nx">timer_list</span> <span class="p">{</span>
-    <span class="nx">struct</span> <span class="nx">list_head</span> <span class="nx">entry</span><span class="p">;</span>
-    <span class="nx">unsigned</span> <span class="kr">long</span> <span class="nx">expires</span><span class="p">;</span>
-    <span class="nx">struct</span> <span class="nx">tvec_base</span> <span class="o">*</span><span class="nx">base</span><span class="p">;</span>
-    <span class="k">void</span> <span class="p">(</span><span class="o">*</span><span class="kd">function</span><span class="p">)(</span><span class="nx">unsigned</span> <span class="kr">long</span><span class="p">);</span>
-    <span class="nx">unsigned</span> <span class="kr">long</span> <span class="nx">data</span><span class="p">;</span>
-    <span class="kr">int</span> <span class="nx">slack</span><span class="p">;</span>
-<span class="p">};</span>
+<div class="highlight"><pre><span></span>struct timer_list {
+    struct list_head entry;
+    unsigned long expires;
+    struct tvec_base *base;
+    void (*function)(unsigned long);
+    unsigned long data;
+    int slack;
+};
 </pre></div>
 
 
@@ -160,25 +161,25 @@ PMT不会，这都是缘于它的固定的高频率，另外一方面，高频�
 <p>linux存放动态定时器使用到了链表，但是又不是放在单独的链表中，因为那样在每个时钟节拍去扫描长链表效率太差，而且维护这样一个排序链表本身也比较费时，插入和删除都比较费时间。</p>
 <p>linux设计了一种巧妙的数据结构来解决这个问题，按expires的值把定时器分为五个级别，每次只检查最低级别的定时器（定时时间比较短的定时器），当低级别的定时器扫描完一遍后，代表时间已经过去了一段时间，这时可能需要从上一级别降级一些定时器到这一级别来，然后再依次处理。这样就比较巧妙的解决了效率问题，每次只扫描为数不多的链表。</p>
 <p>主要的数据结构是这样的，有一个叫</p>
-<div class="highlight"><pre><span class="k">struct</span> <span class="n">tvec</span> <span class="p">{</span>
-    <span class="k">struct</span> <span class="n">list_head</span> <span class="n">vec</span><span class="p">[</span><span class="n">TVN_SIZE</span><span class="p">];</span>
-<span class="p">};</span>
+<div class="highlight"><pre><span></span>struct tvec {
+    struct list_head vec[TVN_SIZE];
+};
 
-<span class="k">struct</span> <span class="n">tvec_root</span> <span class="p">{</span>
-    <span class="k">struct</span> <span class="n">list_head</span> <span class="n">vec</span><span class="p">[</span><span class="n">TVR_SIZE</span><span class="p">];</span>
-<span class="p">};</span>
+struct tvec_root {
+    struct list_head vec[TVR_SIZE];
+};
 
-<span class="k">struct</span> <span class="n">tvec_base</span> <span class="p">{</span>
-    <span class="kt">spinlock_t</span> <span class="n">lock</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">timer_list</span> <span class="o">*</span><span class="n">running_timer</span><span class="p">;</span>
-    <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">timer_jiffies</span><span class="p">;</span>
-    <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">next_timer</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">tvec_root</span> <span class="n">tv1</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">tvec</span> <span class="n">tv2</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">tvec</span> <span class="n">tv3</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">tvec</span> <span class="n">tv4</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">tvec</span> <span class="n">tv5</span><span class="p">;</span>
-<span class="p">};</span>
+struct tvec_base {
+    spinlock_t lock;
+    struct timer_list *running_timer;
+    unsigned long timer_jiffies;
+    unsigned long next_timer;
+    struct tvec_root tv1;
+    struct tvec tv2;
+    struct tvec tv3;
+    struct tvec tv4;
+    struct tvec tv5;
+};
 </pre></div>
 
 
@@ -260,26 +261,26 @@ PMT不会，这都是缘于它的固定的高频率，另外一方面，高频�
     ramaining = schedule_timeout(timespec_to_jiffies(\&amp;t) + 1);
 timespec_to_jiffies()函数首先把存放在timespec结构中的时间转换成节拍数，为了保险，会给计算出的节拍数加上一个节拍。</p>
 <p>在schedule_timeout中使用到了动态定时器，代码如下：</p>
-<div class="highlight"><pre><span class="nx">struct</span> <span class="nx">timer_list</span> <span class="nx">timer</span><span class="p">;</span>
-<span class="nx">unsigned</span> <span class="kr">long</span> <span class="nx">expire</span> <span class="o">=</span> <span class="nx">timeout</span><span class="o">+</span><span class="nx">jiffies</span><span class="p">;</span>
-<span class="nx">init_timer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">timer</span><span class="p">);</span>
-<span class="nx">timer</span><span class="p">.</span><span class="nx">expires</span> <span class="o">=</span> <span class="nx">expire</span><span class="p">;</span>
-<span class="nx">timer</span><span class="p">.</span><span class="nx">data</span> <span class="o">=</span> <span class="p">(</span><span class="nx">unsigned</span> <span class="kr">long</span><span class="p">)</span><span class="nx">current</span><span class="p">;</span>
-<span class="nx">timer</span><span class="p">.</span><span class="kd">function</span> <span class="o">=</span> <span class="nx">process_timeout</span><span class="p">;</span>
-<span class="nx">add_timer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">timer</span><span class="p">);</span>
-<span class="nx">schedule</span><span class="p">();</span>
-<span class="nx">del_singleshot_timer_sync</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">timer</span><span class="p">);</span>
-<span class="nx">timeout</span> <span class="o">=</span> <span class="nx">expire</span> <span class="o">-</span> <span class="nx">jiffies</span><span class="p">;</span>
-<span class="k">return</span> <span class="p">(</span><span class="nx">timeout</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">?</span> <span class="mi">0</span><span class="o">:</span> <span class="nx">timeout</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><span class="nt">struct</span> <span class="nt">timer_list</span> <span class="nt">timer</span><span class="o">;</span>
+<span class="nt">unsigned</span> <span class="nt">long</span> <span class="nt">expire</span> <span class="o">=</span> <span class="nt">timeout</span><span class="o">+</span><span class="nt">jiffies</span><span class="o">;</span>
+<span class="nt">init_timer</span><span class="o">(&amp;</span><span class="nt">timer</span><span class="o">);</span>
+<span class="nt">timer</span><span class="p">.</span><span class="nc">expires</span> <span class="o">=</span> <span class="nt">expire</span><span class="o">;</span>
+<span class="nt">timer</span><span class="p">.</span><span class="nc">data</span> <span class="o">=</span> <span class="o">(</span><span class="nt">unsigned</span> <span class="nt">long</span><span class="o">)</span><span class="nt">current</span><span class="o">;</span>
+<span class="nt">timer</span><span class="p">.</span><span class="nc">function</span> <span class="o">=</span> <span class="nt">process_timeout</span><span class="o">;</span>
+<span class="nt">add_timer</span><span class="o">(&amp;</span><span class="nt">timer</span><span class="o">);</span>
+<span class="nt">schedule</span><span class="o">();</span>
+<span class="nt">del_singleshot_timer_sync</span><span class="o">(&amp;</span><span class="nt">timer</span><span class="o">);</span>
+<span class="nt">timeout</span> <span class="o">=</span> <span class="nt">expire</span> <span class="nt">-</span> <span class="nt">jiffies</span><span class="o">;</span>
+<span class="nt">return</span> <span class="o">(</span><span class="nt">timeout</span> <span class="o">&lt;</span> <span class="nt">0</span><span class="o">?</span> <span class="nt">0</span><span class="o">:</span> <span class="nt">timeout</span><span class="o">);</span>
 </pre></div>
 
 
 <p>当schedule()被调用，就选择另外一个进程执行；当前一个进程恢复运行的时，该函数就删除这个动态定时器。最后一句的return语句，返回0表示定时器到期，返回timeout表示如果进程因某些其他原因被唤醒，到延时到期时还剩余的节拍数。</p>
 <p>当延时到期时，内核执行下列函数</p>
-<div class="highlight"><pre><span class="kt">void</span> <span class="nf">process_timeout</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">__data</span><span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">wake_up_process</span><span class="p">((</span><span class="kt">task_t</span> <span class="o">*</span><span class="p">)</span><span class="n">__data</span><span class="p">);</span>
-<span class="p">}</span>
+<div class="highlight"><pre><span></span>void process_timeout(unsigned long __data)
+{
+    wake_up_process((task_t *)__data);
+}
 </pre></div>
 
 
@@ -288,18 +289,18 @@ timespec_to_jiffies()函数首先把存放在timespec结构中的时间转换成
 <p>有时内核需要等待一个比较短的时间间隔，比如说不超过几毫秒，这时，无需使用动态定时器，因为使用定时器有比较大的设置开销和最小等待时间（1ms），所以这时内核会使用一些延时函数。</p>
 <p>延时函数有udelay()和ndelay()，区别是前者接收一个微秒级的时间间隔作为参数，而后者接收一个纳秒级的时间间隔为参数。</p>
 <p>这两个函数大概是这个样子</p>
-<div class="highlight"><pre><span class="kt">void</span> <span class="nf">udelay</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">usecs</span><span class="p">)</span>
-<span class="p">{</span>
-<span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">loops</span><span class="p">;</span>
-<span class="n">loops</span> <span class="o">=</span> <span class="p">(</span><span class="n">usecs</span><span class="o">*</span><span class="n">HZ</span><span class="o">*</span><span class="n">current_cpu_data</span><span class="p">.</span><span class="n">loops_per_jiffy</span><span class="p">)</span><span class="o">/</span><span class="mi">1000000</span><span class="p">;</span>
-    <span class="n">cur</span><span class="err">\</span><span class="n">_timer</span><span class="o">-&gt;</span><span class="n">delay</span><span class="p">(</span><span class="n">loops</span><span class="p">);</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="nf">ndelay</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">nsecs</span><span class="p">)</span>
-<span class="p">{</span>
-    <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">loops</span><span class="p">;</span>
-    <span class="n">loops</span> <span class="o">=</span> <span class="p">(</span><span class="n">nsecs</span><span class="o">*</span><span class="n">HZ</span><span class="o">*</span><span class="n">current_cpu_data</span><span class="p">.</span><span class="n">loops_per_jiffy</span><span class="p">)</span><span class="o">/</span><span class="mi">1000000000</span><span class="p">;</span>
-    <span class="n">cur</span><span class="err">\</span><span class="n">_timer</span><span class="o">-&gt;</span><span class="n">delay</span><span class="p">(</span><span class="n">loops</span><span class="p">);</span>
-<span class="p">}</span>
+<div class="highlight"><pre><span></span>void udelay(unsigned long usecs)
+{
+unsigned long loops;
+loops = (usecs*HZ*current_cpu_data.loops_per_jiffy)/1000000;
+    cur\_timer-&gt;delay(loops);
+}
+void ndelay(unsigned long nsecs)
+{
+    unsigned long loops;
+    loops = (nsecs*HZ*current_cpu_data.loops_per_jiffy)/1000000000;
+    cur\_timer-&gt;delay(loops);
+}
 </pre></div>
 
 
@@ -337,19 +338,21 @@ tv-&gt;tv_usec = usec;</p>
 }</p>
 </li>
 </ol>                </article>
-<p class="paginator">
-    Page 1 / 1
-</p>
             </aside><!-- /#featured -->
-            </ol><!-- /#posts-list -->
-            </section><!-- /#content -->
         <section id="extras" class="body">
                 <div class="blogroll">
-                        <h2>blogroll</h2>
+                        <h2>links</h2>
                         <ul>
                             <li><a href="http://getpelican.com/">Pelican</a></li>
                         </ul>
                 </div><!-- /.blogroll -->
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
         </section><!-- /#extras -->
 
         <footer id="contentinfo" class="body">
