@@ -10,8 +10,8 @@ before_script:
   - chmod go-rwx travis
   - eval `ssh-agent -s`
   - ssh-add travis
-  - git config user.name "Travis-CI"
-  - git config user.email "noreply@travis-ci.org"
+  - git config --global user.name "Travis-CI"
+  - git config --global user.email "noreply@travis-ci.org"
 
 script:
     - rm -rf ./output
